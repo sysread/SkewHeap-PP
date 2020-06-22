@@ -2,7 +2,7 @@ use Test2::V0;
 use List::Util qw(shuffle);
 use SkewHeap::PP;
 
-my $count    = 10_000;
+my $count    = 500;
 my @ordered  = 1..$count;
 my @shuffled = shuffle @ordered;
 
@@ -20,10 +20,19 @@ subtest 'default interface' => sub{
   is scalar(@taken), $count, 'skew_take: expected number of results, even with ask > count';
   is skew_count $s, 0, 'skew_count: 0 after take';
   ok skew_is_empty $s, 'skew_is_empty: true after take';
-  is @taken, @ordered, 'skew_take: results in expected order';
+  is \@taken, \@ordered, 'skew_take: results in expected order';
 
-  ok skew_put($s, 42), 'skew_put: single item';
-  is skew_take($s), 42, 'skew_take: single item';
+  for (@shuffled) {
+    skew_put($s, $_);
+  }
+
+  undef @taken;
+  for (@ordered) {
+    my $got = skew_take $s;
+    push @taken, $got;
+  }
+
+  is \@taken, \@ordered, 'skew_put + skew_take - single item at a time';
 };
 
 subtest 'object interface' => sub{
@@ -40,7 +49,7 @@ subtest 'object interface' => sub{
   is scalar(@taken), $count, 'take: expected number of results, even with ask > count';
   is $s->count, 0, 'count: 0 after take';
   ok $s->is_empty, 'is_empty: true after take';
-  is @taken, @ordered, 'take: results in expected order';
+  is \@taken, \@ordered, 'take: results in expected order';
 
   ok $s->put(42), 'put: single item';
   is $s->take, 42, 'take: single item';

@@ -30,7 +30,7 @@ print "\n";
 print "------------------------------------------------------------------------------\n";
 print "- put() and take() 1 item with skew heap containing 50,000 nodes\n";
 print "------------------------------------------------------------------------------\n";
-cmpthese 500_000, {
+cmpthese 50_000, {
   'pp' => sub{ skew_put $s_1, 25_000; my $t = skew_take $s_1; },
   'xs' => sub{ SkewHeap::put $xs_1, 25_000; my $t = SkewHeap::take $xs_1; },
 };
@@ -39,7 +39,7 @@ print "\n";
 print "------------------------------------------------------------------------------\n";
 print "- put() and take() 1 item with skew heap containing 100,000 nodes\n";
 print "------------------------------------------------------------------------------\n";
-cmpthese 500_000, {
+cmpthese 50_000, {
   'pp' => sub{ skew_put $s_2, 50_000; my $t = skew_take $s_2; },
   'xs' => sub{ SkewHeap::put $xs_2, 50_000; my $t = SkewHeap::take $xs_2; },
 };
@@ -48,7 +48,7 @@ print "\n";
 print "------------------------------------------------------------------------------\n";
 print "- put() and take() 1 item with skew heap containing 500,000 nodes\n";
 print "------------------------------------------------------------------------------\n";
-cmpthese 500_000, {
+cmpthese 50_000, {
   'pp' => sub{ skew_put $s_3, 250_000; my $t = skew_take $s_3; },
   'xs' => sub{ SkewHeap::put $xs_3, 250_000; my $t = SkewHeap::take $xs_3; },
 };

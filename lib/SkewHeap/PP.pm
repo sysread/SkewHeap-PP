@@ -64,56 +64,34 @@ merged.
   skew_merge $x, $y, $z; # $x contains all elements of $x, $y, and $z;
                          # $y and $z are now empty.
 
+=head2 skew_explain
+
+Prints out a representation of the internal tree structure for debugging.
+
 =head1 OBJECT INTERFACE
 
 An object interface is provided that maps directly to the similarly named
 C<skew_*> routines.
 
-=head2 new
+=over
 
-=head2 count
+=item new - SEE L</skew>
 
-=head2 is_empty
+=item count - SEE L</skew_count>
 
-=head2 peek
+=item is_empty - SEE L</skew_is_empty>
 
-=head2 take
+=item peek - SEE L</skew_peek>
 
-=head2 put
+=item take - SEE L</skew_take>
 
-=head2 merge
+=item put - SEE L</skew_put>
 
-=head1 PERFORMANCE VS L<SkewHeap>
+=item merge - SEE L</skew_merge>
 
-C<SkewHeap::PP> outperforms L<SkewHeap> by a significant margin. I'm still
-trying to determine the root cause of this, and welcome suggestions and
-explanations.
+=item explain = SEE L</skew_explain>
 
-These numbers test the cost of one C<put()> and one C<take()> against a skew
-heap of varying initial size. The value being inserted is the median value of
-the elements already present in the heap to ensure that C<merge()> is fully
-exercised. They were generated with C<perl v5.30.2>.
-
-  ------------------------------------------------------------------------------
-  - put() and take() 1 item with skew heap containing 50,000 nodes
-  ------------------------------------------------------------------------------
-          Rate   xs   pp
-  xs  442478/s   -- -60%
-  pp 1111111/s 151%   --
-
-  ------------------------------------------------------------------------------
-  - put() and take() 1 item with skew heap containing 100,000 nodes
-  ------------------------------------------------------------------------------
-          Rate   xs   pp
-  xs  243902/s   -- -76%
-  pp 1020408/s 318%   --
-
-  ------------------------------------------------------------------------------
-  - put() and take() 1 item with skew heap containing 500,000 nodes
-  ------------------------------------------------------------------------------
-         Rate    xs    pp
-  xs  50100/s    --  -92%
-  pp 625000/s 1148%    --
+=back
 
 =cut
 
@@ -136,12 +114,29 @@ our @EXPORT = qw(
   skew_peek
   skew_put
   skew_take
-  merge_nodes
+  skew_merge
+  skew_explain
 );
 
 sub skew (&) {
   my $cmp = shift;
   return [$cmp, 0, undef];
+}
+
+sub node_explain {
+  my $node = shift;
+  my $indent_size = shift || 0;
+  my $indent = '   ' x $indent_size;
+  print $indent.'- Node: '.$node->[KEY]."\n";
+  node_explain($node->[LEFT], $indent_size + 1) if $node->[LEFT];
+  node_explain($node->[RIGHT], $indent_size + 1) if $node->[RIGHT];
+}
+
+sub skew_explain ($) {
+  my $s = shift;
+  my $n = skew_count($s);
+  print "SkewHeap<size=$n>\n";
+  node_explain($s->[ROOT], 1);
 }
 
 sub merge_nodes ($$$) {
@@ -164,7 +159,12 @@ sub merge_nodes ($$$) {
   #-----------------------------------------------------------------------------
   while (@_) {
     my $node = shift;
-    $node->[RIGHT] && push @_, delete $node->[RIGHT];
+
+    if ($node->[RIGHT]) {
+      push @_, $node->[RIGHT];
+      undef $node->[RIGHT];
+    }
+
     push @subtrees, $node;
   }
 
@@ -177,9 +177,9 @@ sub merge_nodes ($$$) {
   # ultimate node.
   #-----------------------------------------------------------------------------
   while (@subtrees > 1) {
-    my $ult = shift @subtrees;
-    $subtrees[-1][RIGHT] = $subtrees[-1][LEFT];
-    $subtrees[-1][LEFT] = $ult;
+    my $i = $#subtrees - 1;
+    $subtrees[$i][RIGHT] = $subtrees[$i][LEFT];
+    $subtrees[$i][LEFT] = pop(@subtrees);
   }
 
   #-----------------------------------------------------------------------------
@@ -210,7 +210,7 @@ sub skew_take ($;$) {
   my $want = shift;
 
   my @taken;
-  while (($want || 1) > 0 && $skew->[SIZE] > 0) {
+  while (($want || 1) > @taken && $skew->[SIZE] > 0) {
     push @taken, $skew->[ROOT][KEY];
     $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT][LEFT], $skew->[ROOT][RIGHT];
     --$skew->[SIZE];
@@ -223,7 +223,7 @@ sub skew_put ($;@) {
   my $skew = shift;
 
   for (@_) {
-    $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT], [$_, undef, undef];
+    $skew->[ROOT] = merge_nodes($skew->[CMP], $skew->[ROOT], [$_, undef, undef]);
     ++$skew->[SIZE];
   }
 
@@ -254,5 +254,6 @@ sub peek     { goto \&skew_peek     }
 sub put      { goto \&skew_put      }
 sub take     { goto \&skew_take     }
 sub merge    { goto \&skew_merge    }
+sub explain  { goto \&skew_explain  }
 
 1;
