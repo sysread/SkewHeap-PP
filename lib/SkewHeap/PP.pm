@@ -92,7 +92,7 @@ explanations.
 These numbers test the cost of one C<put()> and one C<take()> against a skew
 heap of varying initial size. The value being inserted is the median value of
 the elements already present in the heap to ensure that C<merge()> is fully
-exercised.
+exercised. They were generated with C<perl v5.30.2>.
 
   ------------------------------------------------------------------------------
   - put() and take() 1 item with skew heap containing 50,000 nodes
