@@ -157,9 +157,7 @@ sub merge_nodes ($$$) {
   # faster than shifting them off and then pushing them back onto a newly
   # allocated list.
   #-----------------------------------------------------------------------------
-  while (@_) {
-    my $node = shift;
-
+  while (my $node = shift) {
     if ($node->[RIGHT]) {
       push @_, $node->[RIGHT];
       undef $node->[RIGHT];
