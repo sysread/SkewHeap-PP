@@ -221,7 +221,7 @@ sub skew_put ($;@) {
   my $skew = shift;
 
   for (@_) {
-    $skew->[ROOT] = merge_nodes($skew->[CMP], $skew->[ROOT], [$_, undef, undef]);
+    $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT], [$_, undef, undef];
     ++$skew->[SIZE];
   }
 
