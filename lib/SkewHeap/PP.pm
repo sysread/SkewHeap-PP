@@ -127,29 +127,54 @@ C<skew_*> routines.
 
 =item merge - SEE L</skew_merge>
 
+=item merge_safe - SEE L</skew_merge_safe>
+
 =item explain = SEE L</skew_explain>
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item L<SkewHeap>
+
+Built with XS, L<SkewHeap> is between 50-100% faster than C<SkewHeap::PP> for
+heaps with 100,000 or fewer elements. For large heaps, that drops down to
+roughly I<50% slower> that the pure perl solution.
+
+=item L<https://en.wikipedia.org/wiki/Skew_heap>
 
 =back
 
 =cut
 
-
+#-------------------------------------------------------------------------------
+# Boilerplate
+#-------------------------------------------------------------------------------
 use strict;
 use warnings;
 
-use v5.20;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
-
+#-------------------------------------------------------------------------------
+# Node array index constants
+#-------------------------------------------------------------------------------
 use constant KEY   => 0;
 use constant LEFT  => 1;
 use constant RIGHT => 2;
 
+#-------------------------------------------------------------------------------
+# Skew heap array index constants
+#-------------------------------------------------------------------------------
 use constant CMP   => 0;
 use constant SIZE  => 1;
 use constant ROOT  => 2;
 
+#-------------------------------------------------------------------------------
+# Exports
+#-------------------------------------------------------------------------------
 use parent 'Exporter';
 our @EXPORT = qw(
   skew
@@ -162,6 +187,9 @@ our @EXPORT = qw(
   skew_explain
 );
 
+#-------------------------------------------------------------------------------
+# Common interface
+#-------------------------------------------------------------------------------
 sub skew :prototype(&) {
   return [$_[0], 0, undef];
 }
@@ -280,6 +308,9 @@ sub skew_explain ($skew) {
   node_explain($skew->[ROOT], 1);
 }
 
+#-------------------------------------------------------------------------------
+# Object inteface
+#-------------------------------------------------------------------------------
 sub new ($class, $cmp) {
   my $skew = skew \&$cmp;
   bless $skew, $class;
