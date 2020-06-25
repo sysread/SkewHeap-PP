@@ -220,7 +220,7 @@ sub skew_take ($;$) {
 sub skew_put ($;@) {
   my $skew = shift;
 
-  for (@_) {
+  for (sort{ $skew->[CMP]->($b, $a) } @_) {
     $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT], [$_, undef, undef];
     ++$skew->[SIZE];
   }
