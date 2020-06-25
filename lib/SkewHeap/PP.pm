@@ -162,8 +162,8 @@ our @EXPORT = qw(
   skew_explain
 );
 
-sub skew :prototype(&) ($cmp) {
-  return [$cmp, 0, undef];
+sub skew :prototype(&) {
+  return [$_[0], 0, undef];
 }
 
 sub merge_nodes ($skew, $l, $r) {
@@ -206,16 +206,16 @@ sub merge_nodes_non_destructive ($skew, $l, $r) {
   ];
 }
 
-sub skew_count :prototype($) ($skew) {
-  return $skew->[SIZE];
+sub skew_count :prototype($) {
+  return $_[0][SIZE];
 }
 
-sub skew_is_empty :prototype($) ($skew) {
-  return $skew->[SIZE] == 0;
+sub skew_is_empty :prototype($) {
+  return $_[0][SIZE] == 0;
 }
 
-sub skew_peek :prototype($) ($skew) {
-  return $skew->[ROOT][KEY] unless skew_is_empty $skew;
+sub skew_peek :prototype($) {
+  return $_[0][ROOT][KEY] unless skew_is_empty($_[0]);
   return;
 }
 
