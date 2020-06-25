@@ -12,6 +12,37 @@ version 0.01
 
 =head1 SYNOPSIS
 
+  use SkewHeap::PP;
+
+  my $s = skew{ $_[0] <=> $_[1] };
+
+  # Add items one at a time
+  for (@items) {
+    skew_put($s, $_);
+  }
+
+  # Or as a batch
+  skew_put($s, @items);
+
+  # Take individual items
+  my @taken;
+  until (skew_is_empty($s)) {
+    say "Taking: " . skew_peek($s);
+
+    push @taken, skew_take($s);
+
+    say "Left in queue: " . skew_count($s);
+  }
+
+  # Or take a batch
+  my @take_ten = skew_take($s, 10);
+
+  # Destructively merge two heaps
+  skew_merge($s, $another_skew_heap);
+
+  # Non-destructively merge heaps
+  my $new_heap = skew_merge($a, $b, $c);
+
 =head1 DESCRIPTION
 
 A skew heap is a memory efficient, self-adjusting heap with an amortized
@@ -44,7 +75,7 @@ Returns the top element in the heap without removing it from the heap.
 
 Removes and returns the top element from the heap.
 
-  my $item = skew_take $heap;
+  my $item = skew_take($heap);
 
 Optionally, multiple elements may be returned from the heap by passing the
 desired number of elements, in which case a list is returned, rather than a
@@ -52,14 +83,14 @@ single, scalar element. If there are fewer elements available than requested,
 as many as a immediately available are returned.
 
   # Get 10 elements
-  my @items = skew_take $heap, 10;
+  my @items = skew_take($heap, 10);
 
 =head2 skew_put
 
 Adds one or more items to the heap.
 
-  skew_put $s, 42;
-  skew_put $s, 42, 6, 8;
+  skew_put($s, 42);
+  skew_put($s, 42, 6, 8);
 
 =head2 skew_merge
 
@@ -70,8 +101,15 @@ empty. The comparison function used for ordering is that of the first heap
 passed in. The return value is the first heap into which the other heaps were
 merged.
 
-  skew_merge $x, $y, $z; # $x contains all elements of $x, $y, and $z;
-                         # $y and $z are now empty.
+  skew_merge($x, $y, $z); # $x contains all elements of $x, $y, and $z;
+                          # $y and $z are now empty.
+
+=head2 skew_merge_safe
+
+Non-destructively merges any number of heaps into a new heap whose comparison
+function will be that of the first heap in the list to merge. Returns a new
+heap containing all of the items in each of the other heaps. The other heaps'
+contents will remain intact.
 
 =head2 skew_explain
 
