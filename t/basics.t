@@ -55,4 +55,43 @@ subtest 'object interface' => sub{
   is $s->take, 42, 'take: single item';
 };
 
+subtest 'destructive merge' => sub{
+  my $a = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+  my $b = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+  my $c = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+
+  $a->put(1..10);
+  $b->put(11..20);
+  $c->put(21..30);
+
+  $a->merge($b, $c);
+
+  is $a->count, 30, 'a has expected count';
+  is $b->count, 0, 'b has no remaining items';
+  is $c->count, 0, 'c has no remaining items';
+  is [$a->take(30)], [1..30], 'a contains expected contents';
+};
+
+subtest 'non-destructive merge' => sub{
+  my $a = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+  my $b = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+  my $c = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
+
+  $a->put(1..10);
+  $b->put(11..20);
+  $c->put(21..30);
+
+  my $d = $a->merge_safe($b, $c);
+
+  is $a->count, 10, 'a - count intact';
+  is $b->count, 10, 'b - count intact';
+  is $c->count, 10, 'c - count intact';
+  is $d->count, 30, 'd - expected count';
+
+  is [$a->take($a->count)], [1..10], 'a - expected contents';
+  is [$b->take($b->count)], [11..20], 'b - expected contents';
+  is [$c->take($c->count)], [21..30], 'c - expected contents';
+  is [$d->take($d->count)], [1..30], 'd - expected contents';
+};
+
 done_testing;

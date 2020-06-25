@@ -15,6 +15,7 @@ for my $size (50_000, 100_000, 500_000) {
   my @items = shuffle(0..$batch);
 
   my $pp = skew{ $_[0] <=> $_[1] };
+  my $oo = SkewHeap::PP->new(sub{ $_[0] <=> $_[1] });
   my $xs = skewheap{ $a <=> $b };
 
   print "\n";
@@ -23,8 +24,9 @@ for my $size (50_000, 100_000, 500_000) {
   print "------------------------------------------------------------------------------\n";
 
   cmpthese $inserts, {
-    "pp - put $batch" => sub{ skew_put($pp, @items) },
-    "xs - put $batch" => sub{ $xs->put(0..@items) },
+    'pp' => sub{ skew_put($pp, @items) },
+    'oo' => sub{ $oo->put(@items) },
+    'xs' => sub{ $xs->put(0..@items) },
   };
 
   print "\n";
@@ -33,7 +35,8 @@ for my $size (50_000, 100_000, 500_000) {
   print "------------------------------------------------------------------------------\n";
 
   cmpthese $count, {
-    'pp - put+take 1' => sub{ skew_put $pp, $item; my $t = skew_take $pp; },
-    'xs - put+take 1' => sub{ $xs->put($item); my $t = $xs->take; },
+    'pp' => sub{ skew_put $pp, $item; my $t = skew_take $pp; },
+    'oo' => sub{ $oo->put($item); my $t = $oo->take; },
+    'xs' => sub{ $xs->put($item); my $t = $xs->take; },
   };
 }

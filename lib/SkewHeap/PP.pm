@@ -3,6 +3,37 @@ package SkewHeap::PP;
 
 =head1 SYNOPSIS
 
+  use SkewHeap::PP;
+
+  my $s = skew{ $_[0] <=> $_[1] };
+
+  # Add items one at a time
+  for (@items) {
+    skew_put($s, $_);
+  }
+
+  # Or as a batch
+  skew_put($s, @items);
+
+  # Take individual items
+  my @taken;
+  until (skew_is_empty($s)) {
+    say "Taking: " . skew_peek($s);
+
+    push @taken, skew_take($s);
+
+    say "Left in queue: " . skew_count($s);
+  }
+
+  # Or take a batch
+  my @take_ten = skew_take($s, 10);
+
+  # Destructively merge two heaps
+  skew_merge($s, $another_skew_heap);
+
+  # Non-destructively merge heaps
+  my $new_heap = skew_merge($a, $b, $c);
+
 =head1 DESCRIPTION
 
 A skew heap is a memory efficient, self-adjusting heap with an amortized
@@ -35,7 +66,7 @@ Returns the top element in the heap without removing it from the heap.
 
 Removes and returns the top element from the heap.
 
-  my $item = skew_take $heap;
+  my $item = skew_take($heap);
 
 Optionally, multiple elements may be returned from the heap by passing the
 desired number of elements, in which case a list is returned, rather than a
@@ -43,14 +74,14 @@ single, scalar element. If there are fewer elements available than requested,
 as many as a immediately available are returned.
 
   # Get 10 elements
-  my @items = skew_take $heap, 10;
+  my @items = skew_take($heap, 10);
 
 =head2 skew_put
 
 Adds one or more items to the heap.
 
-  skew_put $s, 42;
-  skew_put $s, 42, 6, 8;
+  skew_put($s, 42);
+  skew_put($s, 42, 6, 8);
 
 =head2 skew_merge
 
@@ -61,8 +92,15 @@ empty. The comparison function used for ordering is that of the first heap
 passed in. The return value is the first heap into which the other heaps were
 merged.
 
-  skew_merge $x, $y, $z; # $x contains all elements of $x, $y, and $z;
-                         # $y and $z are now empty.
+  skew_merge($x, $y, $z); # $x contains all elements of $x, $y, and $z;
+                          # $y and $z are now empty.
+
+=head2 skew_merge_safe
+
+Non-destructively merges any number of heaps into a new heap whose comparison
+function will be that of the first heap in the list to merge. Returns a new
+heap containing all of the items in each of the other heaps. The other heaps'
+contents will remain intact.
 
 =head2 skew_explain
 
@@ -95,8 +133,14 @@ C<skew_*> routines.
 
 =cut
 
+
 use strict;
 use warnings;
+
+use v5.20;
+use feature 'signatures';
+no warnings 'experimental::signatures';
+
 
 use constant KEY   => 0;
 use constant LEFT  => 1;
@@ -118,121 +162,87 @@ our @EXPORT = qw(
   skew_explain
 );
 
-sub skew (&) {
-  my $cmp = shift;
+sub skew :prototype(&) ($cmp) {
   return [$cmp, 0, undef];
 }
 
-sub node_explain {
-  my $node = shift;
-  my $indent_size = shift || 0;
-  my $indent = '   ' x $indent_size;
-  print $indent.'- Node: '.$node->[KEY]."\n";
-  node_explain($node->[LEFT], $indent_size + 1) if $node->[LEFT];
-  node_explain($node->[RIGHT], $indent_size + 1) if $node->[RIGHT];
-}
+sub merge_nodes ($skew, $l, $r) {
+  return $l unless defined $r;
+  return $r unless defined $l;
 
-sub skew_explain ($) {
-  my $s = shift;
-  my $n = skew_count($s);
-  print "SkewHeap<size=$n>\n";
-  node_explain($s->[ROOT], 1);
-}
-
-sub merge_nodes ($$$) {
-  #-----------------------------------------------------------------------------
-  # Note: it is slightly faster to use `defined ||` and direct arg stack
-  # access, which shows up as a significant gain for large, deep merges.
-  #-----------------------------------------------------------------------------
-  $_[1] || return $_[2];
-  $_[2] || return $_[1];
-
-  my $cmp = shift;
-  my @subtrees;
-
-  #-----------------------------------------------------------------------------
-  # Clip off the right child of each node down each right path of the tree.
-  #
-  # Note: Working with the nodes to merge on the arg stack is significantly
-  # faster than shifting them off and then pushing them back onto a newly
-  # allocated list.
-  #-----------------------------------------------------------------------------
-  while (my $node = shift) {
-    if ($node->[RIGHT]) {
-      push @_, $node->[RIGHT];
-      undef $node->[RIGHT];
-    }
-
-    push @subtrees, $node;
+  if ($skew->[CMP]->($l->[KEY], $r->[KEY]) > 0) {
+    ($l, $r) = ($r, $l);
   }
 
-  # Sort the collected subtrees in ascending order
-  @subtrees = sort{ $cmp->($a->[KEY], $b->[KEY]) } @subtrees;
+  my $tmp     = $l->[RIGHT];
+  $l->[RIGHT] = $l->[LEFT];
+  $l->[LEFT]  = merge_nodes($skew, $r, $tmp);
 
-  #-----------------------------------------------------------------------------
-  # Walk backwards down the list of sorted subtrees, moving the penultimate
-  # node's left child (if any) to the right side and making the left side the
-  # ultimate node.
-  #-----------------------------------------------------------------------------
-  while (@subtrees > 1) {
-    my $i = $#subtrees - 1;
-    $subtrees[$i][RIGHT] = $subtrees[$i][LEFT];
-    $subtrees[$i][LEFT] = pop(@subtrees);
-  }
-
-  #-----------------------------------------------------------------------------
-  # The only remaining value on the stack is the result of merging the rest of
-  # the subtrees.
-  #-----------------------------------------------------------------------------
-  shift @subtrees;
+  return $l;
 }
 
-sub skew_count ($) {
-  my $skew = shift;
+sub clone_node ($node) {
+  return unless defined $node;
+
+  return [
+    $node->[KEY],
+    clone_node($node->[LEFT]),
+    clone_node($node->[RIGHT]),
+  ];
+}
+
+sub merge_nodes_non_destructive ($skew, $l, $r) {
+  return clone_node($l) unless defined $r;
+  return clone_node($r) unless defined $l;
+
+  if ($skew->[CMP]->($l->[KEY], $r->[KEY]) > 0) {
+    ($l, $r) = ($r, $l);
+  }
+
+  return [
+    $l->[KEY],
+    merge_nodes_non_destructive($skew, $r, $l->[RIGHT]),
+    clone_node($l->[LEFT]),
+  ];
+}
+
+sub skew_count :prototype($) ($skew) {
   return $skew->[SIZE];
 }
 
-sub skew_is_empty ($) {
-  my $skew = shift;
+sub skew_is_empty :prototype($) ($skew) {
   return $skew->[SIZE] == 0;
 }
 
-sub skew_peek ($) {
-  my $skew = shift;
+sub skew_peek :prototype($) ($skew) {
   return $skew->[ROOT][KEY] unless skew_is_empty $skew;
   return;
 }
 
-sub skew_take ($;$) {
-  my $skew = shift;
-  my $want = shift;
-
+sub skew_take ($skew, $want = undef) {
   my @taken;
   while (($want || 1) > @taken && $skew->[SIZE] > 0) {
     push @taken, $skew->[ROOT][KEY];
-    $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT][LEFT], $skew->[ROOT][RIGHT];
+    $skew->[ROOT] = merge_nodes($skew, $skew->[ROOT][LEFT], $skew->[ROOT][RIGHT]);
     --$skew->[SIZE];
   }
 
   return defined $want ? @taken : $taken[0];
 }
 
-sub skew_put ($;@) {
-  my $skew = shift;
-
-  for (sort{ $skew->[CMP]->($b, $a) } @_) {
-    $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT], [$_, undef, undef];
+sub skew_put ($skew, @items) {
+  for (sort{ $skew->[CMP]->($b, $a) } @items) {
+    $skew->[ROOT] = merge_nodes($skew, $skew->[ROOT], [$_, undef, undef]);
     ++$skew->[SIZE];
   }
 
   return $skew->[SIZE];
 }
 
-sub skew_merge ($;@) {
-  my $skew = shift;
-
-  for (@_) {
-    $skew->[ROOT] = merge_nodes $skew->[CMP], $skew->[ROOT], $_->[ROOT];
+sub skew_merge ($skew, @heaps) {
+  for (@heaps) {
+    $skew->[ROOT] = merge_nodes($skew, $skew->[ROOT], $_->[ROOT]);
+    $skew->[SIZE] += $_->[SIZE];
     $_->[ROOT] = undef;
     $_->[SIZE] = 0;
   }
@@ -240,8 +250,37 @@ sub skew_merge ($;@) {
   return $skew;
 }
 
-sub new {
-  my ($class, $cmp) = @_;
+sub skew_merge_safe (@heaps) {
+  my $skew = [$heaps[0][CMP], 0, undef];
+
+  for (@heaps) {
+    $skew->[ROOT] = merge_nodes_non_destructive($skew, $skew->[ROOT], $_->[ROOT]);
+    $skew->[SIZE] += $_->[SIZE];
+  }
+
+  return $skew;
+}
+
+sub node_explain ($node, $indent_size=0) {
+  my $indent = '   ' x $indent_size;
+  print $indent.'- Node: '.$node->[KEY]."\n";
+
+  if ($node->[LEFT]) {
+    node_explain($node->[LEFT], $indent_size + 1);
+  }
+
+  if ($node->[RIGHT]) {
+    node_explain($node->[RIGHT], $indent_size + 1);
+  }
+}
+
+sub skew_explain ($skew) {
+  my $n = skew_count($skew);
+  print "SkewHeap<size=$n>\n";
+  node_explain($skew->[ROOT], 1);
+}
+
+sub new ($class, $cmp) {
   my $skew = skew \&$cmp;
   bless $skew, $class;
 }
@@ -253,5 +292,10 @@ sub put      { goto \&skew_put      }
 sub take     { goto \&skew_take     }
 sub merge    { goto \&skew_merge    }
 sub explain  { goto \&skew_explain  }
+
+sub merge_safe ($self, @heaps) {
+  my $new = skew_merge_safe($self, @heaps);
+  bless $new, ref($self);
+}
 
 1;
