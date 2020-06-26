@@ -8,13 +8,13 @@ SkewHeap::PP - a fast and flexible heap structure
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 SYNOPSIS
 
   use SkewHeap::PP;
 
-  my $s = skew{ $_[0] <=> $_[1] };
+  my $s = skew( sub{ $_[0] <=> $_[1] } );
 
   # Add items one at a time
   for (@items) {
@@ -57,7 +57,7 @@ two heaps together.
 Creates a new skew heap. Requires a single argument, a code block that knows how
 to prioritize the values to be stored in the heap.
 
-  my $heap = skew{ $_[0] <=> $_[1] };
+  my $heap = skew( sub{ $_[0] <=> $_[1] } );
 
 =head2 skew_count
 
@@ -148,9 +148,9 @@ C<skew_*> routines.
 
 =item L<SkewHeap>
 
-Built with XS, L<SkewHeap> is between 50-100% faster than C<SkewHeap::PP> for
-heaps with 100,000 or fewer elements. For large heaps, that drops down to
-roughly I<50% slower> that the pure perl solution.
+Built with XS, L<SkewHeap> is up to 20% faster than C<SkewHeap::PP> for heaps
+with 100,000 or fewer elements. For large heaps, that drops down to roughly
+I<50% slower> that the pure perl solution.
 
 =item L<https://en.wikipedia.org/wiki/Skew_heap>
 
