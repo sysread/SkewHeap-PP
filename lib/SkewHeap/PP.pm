@@ -206,9 +206,8 @@ sub merge_nodes_safe ($cmp, $a, $b) {
   return clone_node($a) unless defined $b;
   return clone_node($b) unless defined $a;
 
-  if ($cmp->($a->[$KEY], $b->[$KEY]) > 0) {
-    ($a, $b) = ($b, $a);
-  }
+  ($a, $b) = ($b, $a)
+    if $cmp->($a->[$KEY], $b->[$KEY]) > 0;
 
   return [
     $a->[$KEY],
@@ -221,9 +220,8 @@ sub merge_nodes ($cmp, $a, $b) {
   return $a unless defined $b;
   return $b unless defined $a;
 
-  if ($cmp->($a->[$KEY], $b->[$KEY]) > 0) {
-    ($a, $b) = ($b, $a);
-  }
+  ($a, $b) = ($b, $a)
+    if $cmp->($a->[$KEY], $b->[$KEY]) > 0;
 
   my $tmp      = $a->[$RIGHT];
   $a->[$RIGHT] = $a->[$LEFT];
