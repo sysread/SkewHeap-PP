@@ -5,7 +5,7 @@ package SkewHeap::PP;
 
   use SkewHeap::PP;
 
-  my $s = skew( sub{ $_[0] <=> $_[1] } );
+  my $s = skew{ $_[0] <=> $_[1] };
 
   # Add items one at a time
   for (@items) {
@@ -48,7 +48,7 @@ two heaps together.
 Creates a new skew heap. Requires a single argument, a code block that knows how
 to prioritize the values to be stored in the heap.
 
-  my $heap = skew( sub{ $_[0] <=> $_[1] } );
+  my $heap = skew{ $_[0] <=> $_[1] };
 
 =head2 skew_count
 
