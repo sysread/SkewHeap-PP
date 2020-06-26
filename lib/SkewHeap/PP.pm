@@ -139,7 +139,7 @@ C<skew_*> routines.
 
 =item L<SkewHeap>
 
-Written in XS and roughly 3x faster.
+Written in XS and roughly 2x faster.
 
 =item L<https://en.wikipedia.org/wiki/Skew_heap>
 
@@ -304,7 +304,7 @@ sub skew_merge {
 }
 
 sub skew_merge_safe {
-  my $skew = [$_[0][$CMP], 0, undef];
+  my $skew = [ $_[0][$CMP], 0, undef ];
 
   for (@_) {
     $skew->[$ROOT] = merge_nodes_non_destructive(
@@ -347,8 +347,7 @@ sub skew_explain {
 #-------------------------------------------------------------------------------
 sub new {
   my ($class, $cmp) = @_;
-  my $skew = skew($cmp);
-  bless $skew, $class;
+  bless(skew($cmp), $class);
 }
 
 sub count    { goto \&skew_count    }
@@ -362,7 +361,7 @@ sub explain  { goto \&skew_explain  }
 sub merge_safe {
   my $self = shift;
   my $new = skew_merge_safe($self->[$CMP], @_);
-  bless $new, ref($self);
+  bless($new, ref($self));
 }
 
 1;
