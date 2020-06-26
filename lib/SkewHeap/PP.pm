@@ -139,6 +139,8 @@ C<skew_*> routines.
 
 =item L<SkewHeap>
 
+Written in XS and roughly 3x faster.
+
 =item L<https://en.wikipedia.org/wiki/Skew_heap>
 
 =back
@@ -150,10 +152,6 @@ C<skew_*> routines.
 #-------------------------------------------------------------------------------
 use strict;
 use warnings;
-use v5.20;
-
-use feature qw(signatures);
-no warnings qw(experimental::signatures);
 
 #-------------------------------------------------------------------------------
 # Node array index constants
@@ -188,11 +186,13 @@ our @EXPORT = qw(
 #-------------------------------------------------------------------------------
 # Common interface
 #-------------------------------------------------------------------------------
-sub skew ($cmp) {
+sub skew ($) {
+  my $cmp = shift;
   return [$cmp, 0, undef];
 }
 
-sub clone_node ($node) {
+sub clone_node {
+  my $node = shift;
   return unless defined $node;
 
   return [
@@ -202,7 +202,9 @@ sub clone_node ($node) {
   ];
 }
 
-sub merge_nodes_safe ($cmp, $a, $b) {
+sub merge_nodes_safe {
+  my ($cmp, $a, $b) = @_;
+
   return clone_node($a) unless defined $b;
   return clone_node($b) unless defined $a;
 
@@ -216,7 +218,9 @@ sub merge_nodes_safe ($cmp, $a, $b) {
   ];
 }
 
-sub merge_nodes ($cmp, $a, $b) {
+sub merge_nodes {
+  my ($cmp, $a, $b) = @_;
+
   return $a unless defined $b;
   return $b unless defined $a;
 
@@ -230,20 +234,24 @@ sub merge_nodes ($cmp, $a, $b) {
   return $a;
 }
 
-sub skew_count ($skew) {
+sub skew_count {
+  my $skew = shift;
   return $skew->[$SIZE];
 }
 
-sub skew_is_empty ($skew) {
+sub skew_is_empty {
+  my $skew = shift;
   return $skew->[$SIZE] == 0;
 }
 
-sub skew_peek ($skew) {
+sub skew_peek {
+  my $skew = shift;
   return $skew->[$ROOT][$KEY] unless skew_is_empty($_[0]);
   return;
 }
 
-sub skew_take ($skew, $want=undef) {
+sub skew_take {
+  my ($skew, $want) = @_;
   my @taken;
 
   while (($want || 1) > @taken && $skew->[$SIZE] > 0) {
@@ -261,8 +269,10 @@ sub skew_take ($skew, $want=undef) {
   return defined($want) ? @taken : $taken[0];
 }
 
-sub skew_put ($skew, @items) {
-  for (@items) {
+sub skew_put {
+  my $skew = shift;
+
+  for (@_) {
     $skew->[$ROOT] = merge_nodes(
       $skew->[$CMP],
       $skew->[$ROOT],
@@ -275,8 +285,10 @@ sub skew_put ($skew, @items) {
   return $skew->[$SIZE];
 }
 
-sub skew_merge ($skew, @heaps) {
-  for (@heaps) {
+sub skew_merge {
+  my $skew = shift;
+
+  for (@_) {
     $skew->[$ROOT] = merge_nodes(
       $skew->[$CMP],
       $skew->[$ROOT],
@@ -291,10 +303,10 @@ sub skew_merge ($skew, @heaps) {
   return $skew;
 }
 
-sub skew_merge_safe (@heaps) {
-  my $skew = [$heaps[0][$CMP], 0, undef];
+sub skew_merge_safe {
+  my $skew = [$_[0][$CMP], 0, undef];
 
-  for (@heaps) {
+  for (@_) {
     $skew->[$ROOT] = merge_nodes_non_destructive(
       $skew->[$CMP],
       $skew->[$ROOT],
@@ -307,7 +319,10 @@ sub skew_merge_safe (@heaps) {
   return $skew;
 }
 
-sub node_explain ($node, $indent_size=0) {
+sub node_explain {
+  my $node = shift;
+  my $indent_size = shift || 0;
+
   my $indent = '   ' x $indent_size;
   print $indent.'- Node: '.$node->[$KEY]."\n";
 
@@ -320,7 +335,8 @@ sub node_explain ($node, $indent_size=0) {
   }
 }
 
-sub skew_explain ($skew) {
+sub skew_explain {
+  my $skew = shift;
   my $n = skew_count($skew);
   print "SkewHeap<size=$n>\n";
   node_explain($skew->[$ROOT], 1);
@@ -329,7 +345,8 @@ sub skew_explain ($skew) {
 #-------------------------------------------------------------------------------
 # Object inteface
 #-------------------------------------------------------------------------------
-sub new ($class, $cmp) {
+sub new {
+  my ($class, $cmp) = @_;
   my $skew = skew($cmp);
   bless $skew, $class;
 }
@@ -342,8 +359,9 @@ sub take     { goto \&skew_take     }
 sub merge    { goto \&skew_merge    }
 sub explain  { goto \&skew_explain  }
 
-sub merge_safe ($self, @heaps) {
-  my $new = skew_merge_safe($self->[$CMP], @heaps);
+sub merge_safe {
+  my $self = shift;
+  my $new = skew_merge_safe($self->[$CMP], @_);
   bless $new, ref($self);
 }
 

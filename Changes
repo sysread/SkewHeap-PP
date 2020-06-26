@@ -1,8 +1,5 @@
 {{$NEXT}}
 -Performance optimizations
--Use function signatures
--Use "standard perl" syntax
--Min perl version is now 5.20
 
 0.01 2020-06-25
 -Initial release
