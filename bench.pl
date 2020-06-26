@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use standard;
 
 use Benchmark qw(:all);
 use List::Util qw(shuffle);

@@ -6,7 +6,6 @@ on test => sub{
   requires 'FindBin'    => '0';
   requires 'Guacamole'  => '0';
   requires 'List::Util' => '0';
-  requires 'Path::Tiny' => '0';
   requires 'Test2::V0'  => '0';
   requires 'Test::Pod'  => '0';
   requires 'standard'   => '0';

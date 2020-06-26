@@ -139,10 +139,6 @@ C<skew_*> routines.
 
 =item L<SkewHeap>
 
-Built with XS, L<SkewHeap> is up to 20% faster than C<SkewHeap::PP> for heaps
-with 100,000 or fewer elements. For large heaps, that drops down to roughly
-I<50% slower> that the pure perl solution.
-
 =item L<https://en.wikipedia.org/wiki/Skew_heap>
 
 =back

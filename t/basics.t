@@ -1,4 +1,3 @@
-use standard;
 use Test2::V0;
 use List::Util qw(shuffle);
 use SkewHeap::PP;
