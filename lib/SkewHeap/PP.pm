@@ -246,8 +246,8 @@ sub skew_is_empty {
 
 sub skew_peek {
   my $skew = shift;
-  return $skew->[$ROOT][$KEY] unless skew_is_empty($_[0]);
-  return;
+  return if skew_is_empty($skew);
+  return $skew->[$ROOT][$KEY];
 }
 
 sub skew_take {
