@@ -148,7 +148,7 @@ C<skew_*> routines.
 
 =item L<SkewHeap>
 
-Written in XS and roughly 3x faster.
+Written in XS and roughly 2x faster.
 
 =item L<https://en.wikipedia.org/wiki/Skew_heap>
 

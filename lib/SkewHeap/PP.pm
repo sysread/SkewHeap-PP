@@ -186,10 +186,9 @@ our @EXPORT = qw(
 #-------------------------------------------------------------------------------
 # Common interface
 #-------------------------------------------------------------------------------
-sub skew ($) {
-  my $cmp = shift;
-  return [$cmp, 0, undef];
-}
+sub skew (&)          { [ $_[0], 0, undef ] }
+sub skew_count ($)    { $_[0][$SIZE] }
+sub skew_is_empty ($) { $_[0][$SIZE] == 0 }
 
 sub clone_node {
   my $node = shift;
@@ -232,16 +231,6 @@ sub merge_nodes {
   $a->[$LEFT]  = merge_nodes($cmp, $b, $tmp);
 
   return $a;
-}
-
-sub skew_count {
-  my $skew = shift;
-  return $skew->[$SIZE];
-}
-
-sub skew_is_empty {
-  my $skew = shift;
-  return $skew->[$SIZE] == 0;
 }
 
 sub skew_peek {
@@ -345,11 +334,6 @@ sub skew_explain {
 #-------------------------------------------------------------------------------
 # Object inteface
 #-------------------------------------------------------------------------------
-sub new {
-  my ($class, $cmp) = @_;
-  bless(skew($cmp), $class);
-}
-
 sub count    { goto \&skew_count    }
 sub is_empty { goto \&skew_is_empty }
 sub peek     { goto \&skew_peek     }
@@ -357,6 +341,11 @@ sub put      { goto \&skew_put      }
 sub take     { goto \&skew_take     }
 sub merge    { goto \&skew_merge    }
 sub explain  { goto \&skew_explain  }
+
+sub new {
+  my ($class, $cmp) = @_;
+  bless(skew(\&$cmp), $class);
+}
 
 sub merge_safe {
   my $self = shift;
