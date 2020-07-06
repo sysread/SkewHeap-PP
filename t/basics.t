@@ -2,13 +2,13 @@ use Test2::V0;
 use List::Util qw(shuffle);
 use SkewHeap::PP;
 
-my $count    = 500;
+my $count    = 10;
 my @ordered  = 1..$count;
 my @shuffled = shuffle(@ordered);
 
 sub compare {
   my ($a, $b) = @_;
-  return $a <=> $b;
+  return $a - $b;
 }
 
 subtest('default interface' => sub{
@@ -60,7 +60,6 @@ subtest('object interface' => sub{
   is($s->take(), 42, 'take: single item');
 });
 
-=comment
 subtest('destructive merge' => sub{
   my $a = SkewHeap::PP->new(\&compare);
   my $b = SkewHeap::PP->new(\&compare);
@@ -85,20 +84,16 @@ subtest('non-destructive merge' => sub{
 
   $a->put(1..10);
   $b->put(11..20);
-  $c->put(21..30);
 
-  my $d = $a->merge_safe($b, $c);
+  $c->merge_safe($a, $b);
 
   is($a->count(), 10, 'a - count intact');
   is($b->count(), 10, 'b - count intact');
-  is($c->count(), 10, 'c - count intact');
-  is($d->count(), 30, 'd - expected count');
+  is($c->count(), 20, 'c - expected count');
 
   is([$a->take($a->count())], [1..10], 'a - expected contents');
   is([$b->take($b->count())], [11..20], 'b - expected contents');
-  is([$c->take($c->count())], [21..30], 'c - expected contents');
-  is([$d->take($d->count())], [1..30], 'd - expected contents');
+  is([$c->take($c->count())], [1..20], 'c - expected contents');
 });
-=cut
 
 done_testing();

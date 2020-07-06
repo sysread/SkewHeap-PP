@@ -226,11 +226,11 @@ sub merge_nodes {
   ($a, $b) = ($b, $a)
     if $cmp->($a->[$KEY], $b->[$KEY]) > 0;
 
-  my $tmp      = $a->[$RIGHT];
-  $a->[$RIGHT] = $a->[$LEFT];
-  $a->[$LEFT]  = merge_nodes($cmp, $b, $tmp);
-
-  return $a;
+  return [
+    $a->[$KEY],
+    merge_nodes($cmp, $b, $a->[$RIGHT]),
+    $a->[$LEFT],
+  ];
 }
 
 sub skew_peek {
@@ -293,10 +293,10 @@ sub skew_merge {
 }
 
 sub skew_merge_safe {
-  my $skew = [ $_[0][$CMP], 0, undef ];
+  my $skew = shift;
 
   for (@_) {
-    $skew->[$ROOT] = merge_nodes_non_destructive(
+    $skew->[$ROOT] = merge_nodes_safe(
       $skew->[$CMP],
       $skew->[$ROOT],
       $_->[$ROOT],
@@ -334,23 +334,18 @@ sub skew_explain {
 #-------------------------------------------------------------------------------
 # Object inteface
 #-------------------------------------------------------------------------------
-sub count    { goto \&skew_count    }
-sub is_empty { goto \&skew_is_empty }
-sub peek     { goto \&skew_peek     }
-sub put      { goto \&skew_put      }
-sub take     { goto \&skew_take     }
-sub merge    { goto \&skew_merge    }
-sub explain  { goto \&skew_explain  }
+sub count      { goto \&skew_count      }
+sub is_empty   { goto \&skew_is_empty   }
+sub peek       { goto \&skew_peek       }
+sub put        { goto \&skew_put        }
+sub take       { goto \&skew_take       }
+sub merge      { goto \&skew_merge      }
+sub merge_safe { goto \&skew_merge_safe }
+sub explain    { goto \&skew_explain    }
 
 sub new {
   my ($class, $cmp) = @_;
   bless(skew(\&$cmp), $class);
-}
-
-sub merge_safe {
-  my $self = shift;
-  my $new = skew_merge_safe($self->[$CMP], @_);
-  bless($new, ref($self));
 }
 
 1;
